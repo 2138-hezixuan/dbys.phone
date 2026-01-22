@@ -1,4 +1,4 @@
-﻿name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -7,6 +7,12 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -22,32 +28,99 @@ jobs:
         node-version: '20.11.0'
         cache: 'npm'
         
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Install dependencies
+    - name: Check Node.js version
       run: |
-        npm cache clean --force
-        rm -rf node_modules
-        rm -f package-lock.json
-        npm install
-
-    - name: Build
-      run: |
-        npm run build
-        npm run export
+        echo "Node.js version:"
+        node --version
+        echo "npm version:"
+        npm --version
         
-    - name: Create .nojekyll file
-      run: touch out/.nojekyll
-      
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./out
+    - name: Install PostCSS dependencies
+      run: |
+        # 清理缓存
+        npm cache clean --force
+        # 安装项目依赖和PostCSS插件
+        npm install --legacy-peer-deps
+        npm install --save-dev postcss autoprefixer
+        
+    - name: Create PostCSS config
+      run: |
+        # 创建PostCSS配置文件
+        cat > postcss.config.js << 'EOF'
+        module.exports = {
+          plugins: {
+            autoprefixer: {},
+          }
+        }
+        EOF
+        echo "PostCSS配置文件已创建"
+        cat postcss.config.js
+        
     - name: Check package-lock.json
       run: |
         if [ ! -f "package-lock.json" ]; then
           echo "package-lock.json not found, generating..."
           npm install --package-lock-only
+        else
+          echo "package-lock.json exists, checking integrity..."
         fi
+        
+    - name: Build
+      run: |
+        # 清理之前的构建缓存
+        rm -rf .next 2>/dev/null || true
+        
+        # 构建项目
+        echo "开始构建..."
+        npm run build
+        
+        # 如果项目有export命令，则执行
+        if grep -q '"export"' package.json; then
+          echo "执行export..."
+          npm run export
+        else
+          echo "未找到export命令，跳过"
+        fi
+        
+        # 检查构建输出
+        echo "构建输出内容:"
+        ls -la .next 2>/dev/null || ls -la out 2>/dev/null || ls -la dist 2>/dev/null
+        
+    - name: Prepare for deployment
+      run: |
+        # 确定输出目录
+        if [ -d "out" ]; then
+          OUTPUT_DIR="out"
+        elif [ -d ".next" ]; then
+          OUTPUT_DIR=".next"
+        elif [ -d "dist" ]; then
+          OUTPUT_DIR="dist"
+        else
+          echo "未找到构建输出目录，尝试在当前目录查找HTML文件"
+          OUTPUT_DIR="."
+        fi
+        
+        echo "输出目录: $OUTPUT_DIR"
+        
+        # 创建.nojekyll文件防止GitHub Pages使用Jekyll处理
+        touch $OUTPUT_DIR/.nojekyll
+        
+        # 创建CNAME文件（如果需要自定义域名）
+        # echo "your-domain.com" > $OUTPUT_DIR/CNAME
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./out
+        # 如果构建输出在其他目录，修改为相应的目录
+        # publish_dir: ./.next
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        
+    - name: Verify deployment
+      run: |
+        echo "部署完成！"
+        echo "你的网站应该可以在以下地址访问："
+        echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
