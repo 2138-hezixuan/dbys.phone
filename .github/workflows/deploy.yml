@@ -23,8 +23,15 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm install
       
+    - name: Install dependencies
+      run: |
+        npm cache clean --force
+        rm -rf node_modules
+        rm -f package-lock.json
+        npm install
+
     - name: Build
       run: |
         npm run build
@@ -38,3 +45,9 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./out
+    - name: Check package-lock.json
+      run: |
+        if [ ! -f "package-lock.json" ]; then
+          echo "package-lock.json not found, generating..."
+          npm install --package-lock-only
+        fi
