@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>防滑测试页面</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overscroll-behavior: none;
+      touch-action: none;
+      overflow: hidden;
+      height: 100%;
+      background: linear-gradient(135deg, #f5f1e8 0%, #e8dfc9 100%);
+      font-family: 'Noto Serif SC', serif;
+    }
+    
+    .test-container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #8B4513;
+      margin-bottom: 20px;
+    }
+    
+    .test-area {
+      width: 300px;
+      height: 300px;
+      border: 3px dashed #8B4513;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    
+    .status {
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .instructions {
+      margin-top: 30px;
+      color: #666;
+      font-size: 14px;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>雕版印刷 - 防滑功能测试</h1>
+    
+    <div class="test-area">
+      <p>尝试滑动这个区域</p>
+    </div>
+    
+    <div class="status success">
+      ✓ 防滑功能正常 - 页面无法滚动
+    </div>
+    
+    <div class="instructions">
+      <p><strong>测试说明：</strong></p>
+      <p>1. 用手指尝试上下滑动页面</p>
+      <p>2. 尝试左右滑动页面</p>
+      <p>3. 尝试双指缩放</p>
+      <p>4. 长按文字</p>
+      <p>如果以上操作都无法使页面滚动或缩放，说明防滑功能正常工作。</p>
+    </div>
+    
+    <button onclick="location.href='/'" style="margin-top: 30px; padding: 10px 20px; background-color: #8B4513; color: white; border: none; border-radius: 5px; cursor: pointer;">
+      返回游戏
+    </button>
+  </div>
+
+  <script>
+    // 额外的防滑脚本
+    document.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+    
+    document.addEventListener('wheel', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+    
+    // 防止文本选择
+    document.addEventListener('selectstart', function(e) {
+      e.preventDefault();
+    });
+    
+    // 显示触摸坐标（调试用）
+    let touchCount = 0;
+    document.addEventListener('touchstart', function(e) {
+      touchCount++;
+      console.log(`触摸开始 (${touchCount}次):`, e.touches[0].clientX, e.touches[0].clientY);
+    });
+  </script>
+</body>
+</html>

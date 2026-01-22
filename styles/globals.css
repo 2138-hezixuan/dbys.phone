@@ -39,6 +39,50 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* ===== 移动端防滑动样式 ===== */
+html, body {
+  overscroll-behavior: none; /* 防止边界回弹 */
+  touch-action: none; /* 禁止所有触摸操作 */
+  -webkit-touch-callout: none; /* 禁止长按菜单 */
+  -webkit-user-select: none; /* 禁止文本选择（iOS Safari） */
+  user-select: none; /* 禁止文本选择 */
+  overflow: hidden; /* 隐藏滚动条 */
+  position: fixed; /* 固定位置防止滚动 */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* 游戏容器专用样式 */
+.game-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* 防止图片和画布被拖拽 */
+img, canvas {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  pointer-events: none; /* 防止触摸事件穿透 */
+}
+
+/* 允许特定元素内部滚动（如果有需要） */
+.allow-scroll {
+  touch-action: pan-y;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
