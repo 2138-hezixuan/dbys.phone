@@ -7,197 +7,277 @@ export default function Home() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [scrollPreventionActive, setScrollPreventionActive] = useState(false);
-  
-  // 主防滑效果
+  const scrollLockInterval = useRef<NodeJS.Timeout | null>(null);
+  const isLocked = useRef(false);
+
+  // 主防滑效果 - 极端强化版本
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || isLocked.current) return;
     
-    console.log('🎮 雕版印刷游戏 - 防滑系统启动');
+    console.log('🎮 雕版印刷游戏 - 极端防滑系统启动');
+    isLocked.current = true;
     
     // 检测设备类型
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const hasTouch = 'ontouchstart' in window;
     setIsTouchDevice(isMobile || hasTouch);
+
+    // ========== 1. 极端CSS锁定 ==========
+    // 使用cssText一次性设置所有样式，避免样式竞争
+    document.documentElement.style.cssText = `
+      overflow: hidden !important;
+      position: fixed !important;
+      width: 100% !important;
+      height: 100% !important;
+      touch-action: none !important;
+      -webkit-overflow-scrolling: none !important;
+      overscroll-behavior: none !important;
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    `;
     
-    // 保存原始样式以便恢复
-    const originalBodyStyles = {
-      overflow: document.body.style.overflow,
-      position: document.body.style.position,
-      width: document.body.style.width,
-      height: document.body.style.height,
-      top: document.body.style.top,
-      left: document.body.style.left,
-    };
-    
-    const originalHtmlStyles = {
-      overflow: document.documentElement.style.overflow,
-    };
-    
-    // 应用防滑样式到body和html
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    document.body.style.top = '0';
-    document.body.style.left = '0';
-    document.body.style.touchAction = 'none';
-    document.body.style.msTouchAction = 'none';
-    document.body.style.webkitOverflowScrolling = 'none';
-    
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.touchAction = 'none';
-    
-    // 核心防滑函数
-    const preventDefaultScroll = (e: Event) => {
+    document.body.style.cssText = `
+      overflow: hidden !important;
+      position: fixed !important;
+      width: 100% !important;
+      height: 100% !important;
+      touch-action: none !important;
+      -webkit-overflow-scrolling: none !important;
+      overscroll-behavior: none !important;
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-user-select: none !important;
+      -moz-user-select: none !important;
+      -ms-user-select: none !important;
+      user-select: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-touch-callout: none !important;
+    `;
+
+    // 立即锁定游戏容器
+    if (gameContainerRef.current) {
+      gameContainerRef.current.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+        touch-action: none !important;
+        overscroll-behavior: none !important;
+        -webkit-overflow-scrolling: none !important;
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+        -webkit-touch-callout: none !important;
+        z-index: 9999 !important;
+        background-color: var(--background) !important;
+      `;
+    }
+
+    // ========== 2. 极端JavaScript事件锁定 ==========
+    // 阻止所有可能引起滚动的事件 - 在捕获阶段（最早阶段）
+    const preventEverything = (e: Event) => {
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       return false;
     };
-    
-    const handleTouchStart = (e: TouchEvent) => {
-      // 记录触摸开始时间，用于防止双击缩放
-      if (gameContainerRef.current) {
-        gameContainerRef.current.dataset.lastTouchStart = Date.now().toString();
+
+    // 更全面的事件列表
+    const events = [
+      'touchstart', 'touchmove', 'touchend', 'touchcancel',
+      'wheel', 'mousewheel', 'DOMMouseScroll',
+      'scroll', 'keydown', 'keyup', 'keypress',
+      'gesturestart', 'gesturechange', 'gestureend',
+      'panstart', 'panmove', 'panend', 'swipe',
+      'selectstart', 'dragstart', 'contextmenu',
+      'pointerdown', 'pointermove', 'pointerup'
+    ];
+
+    // 添加事件监听器（捕获阶段 + passive: false）
+    events.forEach(eventName => {
+      document.addEventListener(eventName, preventEverything, {
+        capture: true,    // 捕获阶段
+        passive: false    // 允许preventDefault
+      });
+      
+      window.addEventListener(eventName, preventEverything, {
+        capture: true,
+        passive: false
+      });
+      
+      document.body.addEventListener(eventName, preventEverything, {
+        capture: true,
+        passive: false
+      });
+    });
+
+    // ========== 3. iOS特殊处理 ==========
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      console.log('📱 iOS设备 - 应用极端防滑');
+      
+      // 防止弹性滚动
+      document.body.style.webkitOverflowScrolling = 'auto';
+      document.body.style.overscrollBehavior = 'none';
+      
+      // 防止下拉刷新
+      const preventPullToRefresh = (e: TouchEvent) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        if (touch.clientY - touch.screenY > 10) {
+          e.preventDefault();
+        }
+      };
+      
+      document.addEventListener('touchmove', preventPullToRefresh, {
+        capture: true,
+        passive: false
+      });
+
+      // 防止双击缩放
+      let lastTouchEnd = 0;
+      const preventDoubleTapZoom = (e: TouchEvent) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      };
+      
+      document.addEventListener('touchend', preventDoubleTapZoom, {
+        capture: true,
+        passive: false
+      });
+
+      // 防止长按菜单
+      document.addEventListener('contextmenu', preventEverything, {
+        capture: true,
+        passive: false
+      });
+    }
+
+    // ========== 4. 强制滚动位置锁定 ==========
+    const lockScrollPosition = () => {
+      // 多个方法确保滚动位置锁定
+      window.scrollTo(0, 0);
+      window.scrollTo(0, 1); // iOS需要
+      window.scrollTo(1, 0); // iOS需要
+      
+      if (document.documentElement) {
+        document.documentElement.scrollTop = 0;
+        document.documentElement.scrollLeft = 0;
       }
       
-      // 总是阻止默认行为
-      e.preventDefault();
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      // 重要：阻止所有触摸移动导致的滚动
-      e.preventDefault();
-      
-      // 防止多点触控导致的缩放
-      if (e.touches.length > 1) {
-        e.preventDefault();
+      if (document.body) {
+        document.body.scrollTop = 0;
+        document.body.scrollLeft = 0;
       }
     };
+
+    // 立即锁定
+    lockScrollPosition();
     
-    const handleTouchEnd = (e: TouchEvent) => {
-      e.preventDefault();
-    };
+    // 定时锁定，防止任何滚动
+    scrollLockInterval.current = setInterval(lockScrollPosition, 50); // 更频繁的锁定
+
+    // ========== 5. 监听所有可能的滚动源 ==========
+    // 监听窗口大小变化（防止地址栏隐藏/显示）
+    window.addEventListener('resize', lockScrollPosition, { passive: false });
     
-    // iOS特殊处理：防止双击缩放
-    const handleDoubleTap = (e: TouchEvent) => {
-      const now = Date.now();
-      const lastTouch = gameContainerRef.current?.dataset.lastTouchStart;
-      
-      if (lastTouch && (now - parseInt(lastTouch)) < 500) {
-        e.preventDefault();
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        setTimeout(lockScrollPosition, 100);
       }
-    };
-    
-    // 防止键盘滚动
-    const preventKeyboardScroll = (e: KeyboardEvent) => {
-      const scrollKeys = [
-        'Space', 'ArrowUp', 'ArrowDown', 
-        'ArrowLeft', 'ArrowRight', 'PageUp', 
-        'PageDown', 'Home', 'End'
-      ];
+    });
+
+    // ========== 6. 监控和调试 ==========
+    if (process.env.NODE_ENV === 'development') {
+      // 监控滚动事件
+      const monitorScroll = () => {
+        if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
+          console.error('❌ 检测到滚动！位置:', {
+            windowScrollY: window.scrollY,
+            htmlScrollTop: document.documentElement.scrollTop,
+            bodyScrollTop: document.body.scrollTop
+          });
+          lockScrollPosition();
+        }
+      };
       
-      if (scrollKeys.includes(e.code)) {
-        e.preventDefault();
-      }
-    };
-    
-    // 防止鼠标滚轮滚动
-    const preventWheelScroll = (e: WheelEvent) => {
-      e.preventDefault();
-    };
-    
-    // 配置事件监听选项
-    const passiveFalseOptions = { passive: false };
-    const captureOptions = { passive: false, capture: true };
-    
-    // 添加事件监听器
-    // 1. 触摸事件
-    document.addEventListener('touchstart', handleTouchStart, captureOptions);
-    document.addEventListener('touchmove', handleTouchMove, captureOptions);
-    document.addEventListener('touchend', handleTouchEnd, captureOptions);
-    document.addEventListener('touchcancel', handleTouchEnd, captureOptions);
-    
-    // 2. 防止双击缩放（iOS）
-    document.addEventListener('touchend', handleDoubleTap, passiveFalseOptions);
-    
-    // 3. 防止键盘滚动
-    document.addEventListener('keydown', preventKeyboardScroll, passiveFalseOptions);
-    
-    // 4. 防止滚轮滚动
-    document.addEventListener('wheel', preventWheelScroll, passiveFalseOptions);
-    
-    // 5. 防止拖拽选择文本
-    document.addEventListener('selectstart', preventDefaultScroll, passiveFalseOptions);
-    document.addEventListener('dragstart', preventDefaultScroll, passiveFalseOptions);
-    
-    // 6. 防止上下文菜单
-    document.addEventListener('contextmenu', preventDefaultScroll, passiveFalseOptions);
-    
-    // 设置状态
+      setInterval(monitorScroll, 100);
+    }
+
+    // ========== 7. 防滑状态 ==========
     setScrollPreventionActive(true);
-    
-    console.log('✅ 防滑系统已激活');
-    
-    // 清理函数
+    console.log('✅ 极端防滑系统已激活');
+
+    // ========== 8. 清理函数 ==========
     return () => {
-      console.log('🔄 清理防滑系统');
+      console.log('🔄 清理极端防滑系统');
+      isLocked.current = false;
+      
+      // 清除定时器
+      if (scrollLockInterval.current) {
+        clearInterval(scrollLockInterval.current);
+      }
       
       // 移除事件监听器
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchcancel', handleTouchEnd);
-      document.removeEventListener('touchend', handleDoubleTap);
-      document.removeEventListener('keydown', preventKeyboardScroll);
-      document.removeEventListener('wheel', preventWheelScroll);
-      document.removeEventListener('selectstart', preventDefaultScroll);
-      document.removeEventListener('dragstart', preventDefaultScroll);
-      document.removeEventListener('contextmenu', preventDefaultScroll);
-      
-      // 恢复原始样式
-      Object.keys(originalBodyStyles).forEach(key => {
-        document.body.style[key] = originalBodyStyles[key];
+      events.forEach(eventName => {
+        document.removeEventListener(eventName, preventEverything, true);
+        window.removeEventListener(eventName, preventEverything, true);
+        document.body.removeEventListener(eventName, preventEverything, true);
       });
       
-      Object.keys(originalHtmlStyles).forEach(key => {
-        document.documentElement.style[key] = originalHtmlStyles[key];
-      });
+      // 移除特殊监听器
+      window.removeEventListener('resize', lockScrollPosition);
+      document.removeEventListener('visibilitychange', lockScrollPosition);
+      
+      // 恢复样式（理论上不需要，但为了安全）
+      document.documentElement.style.cssText = '';
+      document.body.style.cssText = '';
       
       setScrollPreventionActive(false);
     };
   }, []);
-  
-  // 额外的防滑：监听滚动事件并立即重置
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const resetScrollPosition = () => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-    
-    // 监听滚动事件
-    window.addEventListener('scroll', resetScrollPosition, { passive: false });
-    
-    // 初始滚动到顶部
-    resetScrollPosition();
-    
-    // 监听窗口大小变化（防止移动端地址栏隐藏/显示导致滚动）
-    window.addEventListener('resize', resetScrollPosition);
-    
-    return () => {
-      window.removeEventListener('scroll', resetScrollPosition);
-      window.removeEventListener('resize', resetScrollPosition);
-    };
-  }, []);
-  
+
   // 游戏容器的触摸事件处理
   const handleGameContainerTouch = (e: React.TouchEvent) => {
-    // 阻止所有触摸事件的默认行为
+    // 极端阻止所有触摸事件的默认行为
     e.preventDefault();
     e.stopPropagation();
   };
-  
+
+  // 添加一个测试按钮来验证防滑效果
+  const testScrollLock = () => {
+    console.log('🔍 测试滚动锁定状态:');
+    console.log('- window.scrollY:', window.scrollY);
+    console.log('- document.documentElement.scrollTop:', document.documentElement.scrollTop);
+    console.log('- document.body.scrollTop:', document.body.scrollTop);
+    console.log('- document.body.style.overflow:', document.body.style.overflow);
+    console.log('- document.body.style.position:', document.body.style.position);
+    
+    // 尝试强制滚动
+    window.scrollTo(0, 100);
+    setTimeout(() => {
+      console.log('✅ 测试后滚动位置:', window.scrollY);
+    }, 100);
+  };
+
   return (
     <div 
       ref={gameContainerRef}
@@ -229,7 +309,7 @@ export default function Home() {
         
         // 视觉样式
         backgroundColor: 'var(--background)',
-        zIndex: 0,
+        zIndex: 9999,
       }}
       // 触摸事件处理器
       onTouchStart={handleGameContainerTouch}
@@ -240,17 +320,17 @@ export default function Home() {
       onWheel={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* 防滑状态提示条 */}
+      {/* 极端防滑状态提示条 */}
       {isTouchDevice && (
         <div 
-          className="fixed top-0 left-0 right-0 bg-gradient-to-r from-green-600 to-emerald-500 text-white text-center py-2 px-4 text-sm z-50 font-bold shadow-md"
+          className="fixed top-0 left-0 right-0 bg-gradient-to-r from-red-600 to-orange-500 text-white text-center py-2 px-4 text-sm z-50 font-bold shadow-md"
           style={{ 
             userSelect: 'none',
             pointerEvents: 'none',
             opacity: 0.95,
           }}
         >
-          🎮 防滑模式已启用 - 可放心拖拽游戏元素，不会滑动页面
+          🔒 极端防滑模式 - 页面已完全锁定
         </div>
       )}
       
@@ -272,18 +352,18 @@ export default function Home() {
       {/* 开发调试面板 */}
       {process.env.NODE_ENV === 'development' && (
         <div 
-          className="fixed bottom-4 right-4 bg-black/85 text-white p-3 rounded-lg text-xs z-50 border border-green-500/50 shadow-lg"
+          className="fixed bottom-4 right-4 bg-black/85 text-white p-3 rounded-lg text-xs z-50 border border-red-500/50 shadow-lg"
           style={{ userSelect: 'none', minWidth: '200px' }}
         >
           <div className="font-bold mb-2 flex items-center">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-            防滑系统状态
+            <div className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></div>
+            极端防滑系统
           </div>
           <div className="space-y-1">
             <div className="flex justify-between">
               <span>防滑状态:</span>
-              <span className={`font-bold ${scrollPreventionActive ? 'text-green-400' : 'text-red-400'}`}>
-                {scrollPreventionActive ? '✓ 正常' : '✗ 异常'}
+              <span className={`font-bold ${scrollPreventionActive ? 'text-red-400' : 'text-gray-400'}`}>
+                {scrollPreventionActive ? '🔒 极端锁定' : '⚠️ 未锁定'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -293,20 +373,26 @@ export default function Home() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span>滚动锁定:</span>
-              <span className="text-yellow-300">已强制锁定</span>
+              <span>定时锁定:</span>
+              <span className="text-yellow-300">20次/秒</span>
             </div>
+            <button 
+              onClick={testScrollLock}
+              className="mt-2 w-full bg-red-700 hover:bg-red-800 text-white py-1 rounded text-xs"
+            >
+              测试锁定
+            </button>
             <div className="text-gray-400 text-xs mt-2 pt-2 border-t border-gray-700">
-              页面滑动已完全禁用 • 游戏交互正常
+              页面已完全锁定，无法滑动
             </div>
           </div>
         </div>
       )}
-      
-      {/* 全局内联样式 - 最高优先级 */}
+
+      {/* 极端内联样式 */}
       <style jsx global>{`
-        /* 最重要：完全禁用html和body的滚动 */
-        html, body {
+        /* 极端CSS覆盖 - 使用最高优先级 */
+        html, body, #__next, main, .game-container, .game-content-area {
           overflow: hidden !important;
           position: fixed !important;
           width: 100% !important;
@@ -316,9 +402,13 @@ export default function Home() {
           overscroll-behavior: none !important;
           -ms-overflow-style: none !important;
           scrollbar-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          top: 0 !important;
+          left: 0 !important;
         }
         
-        /* 防止任何滚动条闪现 */
+        /* 极端防止所有滚动条 */
         * {
           -ms-overflow-style: none !important;
           scrollbar-width: none !important;
@@ -328,73 +418,59 @@ export default function Home() {
           display: none !important;
           width: 0 !important;
           height: 0 !important;
+          background: transparent !important;
         }
         
-        /* 游戏容器内所有元素防滑 */
-        .game-container,
-        .game-container *,
-        .game-content-area,
-        .game-content-area * {
-          touch-action: none !important;
-          -webkit-tap-highlight-color: transparent !important;
-          -webkit-touch-callout: none !important;
+        /* 极端防止所有用户交互 */
+        * {
           -webkit-user-select: none !important;
           -moz-user-select: none !important;
           -ms-user-select: none !important;
           user-select: none !important;
+          -webkit-tap-highlight-color: transparent !important;
+          -webkit-touch-callout: none !important;
           -webkit-user-drag: none !important;
-          -khtml-user-drag: none !important;
-          -moz-user-drag: none !important;
-          -o-user-drag: none !important;
           user-drag: none !important;
         }
         
-        /* 防止iOS Safari的弹性滚动 */
+        /* 允许按钮和输入框有基本交互 */
+        button, input, textarea, [contenteditable] {
+          -webkit-user-select: auto !important;
+          user-select: auto !important;
+          touch-action: manipulation !important;
+        }
+        
+        /* iOS弹性滚动特殊处理 */
         @supports (-webkit-touch-callout: none) {
-          body {
-            /* 防止iOS下拉刷新 */
+          html, body {
+            height: -webkit-fill-available !important;
+            min-height: -webkit-fill-available !important;
             overscroll-behavior-y: none !important;
-            /* 防止弹性效果 */
             -webkit-overflow-scrolling: auto !important;
           }
         }
         
-        /* 防止文字选中（额外保险） */
-        *::selection {
-          background: transparent !important;
+        /* 防止长按出现菜单 */
+        * {
+          -webkit-touch-callout: none !important;
         }
         
-        *::-moz-selection {
-          background: transparent !important;
+        /* 防止图片拖拽 */
+        img {
+          pointer-events: none !important;
+          -webkit-user-drag: none !important;
+          user-drag: none !important;
         }
         
         /* 确保游戏交互元素可点击 */
-        button, 
-        [role="button"],
-        [onclick],
-        .clickable,
-        .interactive {
-          cursor: pointer !important;
-          pointer-events: auto !important;
-        }
-        
-        /* 防止长按菜单 */
-        a, img, div {
-          -webkit-touch-callout: none !important;
-          -webkit-user-select: none !important;
-        }
-        
-        /* 防止图片拖动 */
-        img {
-          pointer-events: none !important;
-        }
-        
-        /* 针对游戏组件的特殊处理 */
         [data-game-element],
         [data-draggable],
-        [data-interactive] {
-          touch-action: none !important;
+        [data-interactive],
+        [role="button"],
+        .clickable,
+        .interactive {
           pointer-events: auto !important;
+          cursor: pointer !important;
         }
       `}</style>
     </div>
