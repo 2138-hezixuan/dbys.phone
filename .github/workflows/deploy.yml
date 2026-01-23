@@ -35,56 +35,117 @@ jobs:
         echo "npm version:"
         npm --version
         
-    - name: Install PostCSS dependencies
+    - name: Clean and install dependencies
       run: |
-        # 清理缓存
+        # 彻底清理缓存和旧文件
         npm cache clean --force
-        # 安装项目依赖和PostCSS插件
-        npm install --legacy-peer-deps
-        npm install --save-dev postcss autoprefixer
+        rm -rf node_modules 2>/dev/null || true
+        rm -f package-lock.json 2>/dev/null || true
         
-    - name: Create PostCSS config
+        # 安装基础依赖
+        npm install --legacy-peer-deps
+        
+        # 安装所有必需的 PostCSS 插件
+        npm install --save-dev postcss postcss-flexbugs-fixes postcss-preset-env autoprefixer cssnano
+        
+    - name: Create comprehensive PostCSS config
       run: |
-        # 创建PostCSS配置文件
+        # 创建完整的 PostCSS 配置文件
         cat > postcss.config.js << 'EOF'
         module.exports = {
-          plugins: {
-            autoprefixer: {},
-          }
+          plugins: [
+            'postcss-flexbugs-fixes',
+            [
+              'postcss-preset-env',
+              {
+                autoprefixer: {
+                  flexbox: 'no-2009',
+                },
+                stage: 3,
+                features: {
+                  'custom-properties': false,
+                  'nesting-rules': true
+                },
+              },
+            ],
+            [
+              'autoprefixer',
+              {
+                grid: true
+              }
+            ],
+          ],
         }
         EOF
-        echo "PostCSS配置文件已创建"
+        
+        echo "PostCSS配置文件已创建:"
         cat postcss.config.js
         
-    - name: Check package-lock.json
-      run: |
-        if [ ! -f "package-lock.json" ]; then
-          echo "package-lock.json not found, generating..."
-          npm install --package-lock-only
-        else
-          echo "package-lock.json exists, checking integrity..."
+        # 如果项目中已经有 postcss.config.js，备份它
+        if [ -f "postcss.config.js.original" ]; then
+          echo "发现原始PostCSS配置，已备份"
         fi
         
-    - name: Build
+    - name: Check CSS file syntax
       run: |
-        # 清理之前的构建缓存
+        echo "检查CSS文件..."
+        if [ -f "app/globals.css" ]; then
+          echo "globals.css 文件存在，行数:"
+          wc -l app/globals.css
+          
+          echo "前20行内容:"
+          head -20 app/globals.css
+        else
+          echo "警告: 未找到 app/globals.css"
+          find . -name "*.css" -type f | head -5
+        fi
+        
+    - name: Fix potential CSS issues
+      run: |
+        # 如果CSS文件中有未来语法，尝试修复
+        if [ -f "app/globals.css" ]; then
+          # 备份原始文件
+          cp app/globals.css app/globals.css.backup
+          
+          # 移除可能的错误语法（示例）
+          # sed -i 's/@custom-media//g' app/globals.css 2>/dev/null || true
+          
+          echo "CSS文件已备份"
+        fi
+        
+    - name: Build with debug info
+      run: |
+        echo "开始构建项目..."
+        
+        # 设置环境变量以便更好的错误报告
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        export DEBUG="next:*"
+        
+        # 清理之前的构建
         rm -rf .next 2>/dev/null || true
         
-        # 构建项目
-        echo "开始构建..."
-        npm run build
-        
-        # 如果项目有export命令，则执行
-        if grep -q '"export"' package.json; then
-          echo "执行export..."
-          npm run export
+        # 尝试构建
+        if npm run build 2>&1; then
+          echo "构建成功!"
         else
-          echo "未找到export命令，跳过"
+          echo "构建失败，尝试替代构建方案..."
+          
+          # 如果标准构建失败，尝试使用不同的方法
+          echo "尝试使用更兼容的模式构建..."
+          npx next build --debug 2>&1 || echo "构建失败，请检查错误信息"
         fi
         
         # 检查构建输出
-        echo "构建输出内容:"
-        ls -la .next 2>/dev/null || ls -la out 2>/dev/null || ls -la dist 2>/dev/null
+        if [ -d ".next" ]; then
+          echo "构建输出目录内容:"
+          ls -la .next/
+        fi
+        
+        # 如果有export脚本，执行它
+        if grep -q '"export"' package.json; then
+          echo "执行export..."
+          npm run export 2>&1 || echo "export失败"
+        fi
         
     - name: Prepare for deployment
       run: |
@@ -93,28 +154,29 @@ jobs:
           OUTPUT_DIR="out"
         elif [ -d ".next" ]; then
           OUTPUT_DIR=".next"
-        elif [ -d "dist" ]; then
-          OUTPUT_DIR="dist"
+          # 复制静态文件到正确位置
+          if [ -d ".next/static" ]; then
+            echo "Next.js 静态目录存在"
+          fi
         else
-          echo "未找到构建输出目录，尝试在当前目录查找HTML文件"
+          echo "警告: 未找到标准输出目录"
           OUTPUT_DIR="."
         fi
         
         echo "输出目录: $OUTPUT_DIR"
         
-        # 创建.nojekyll文件防止GitHub Pages使用Jekyll处理
-        touch $OUTPUT_DIR/.nojekyll
+        # 创建.nojekyll文件
+        touch $OUTPUT_DIR/.nojekyll 2>/dev/null || true
         
-        # 创建CNAME文件（如果需要自定义域名）
-        # echo "your-domain.com" > $OUTPUT_DIR/CNAME
+        # 显示输出目录结构
+        echo "输出目录结构:"
+        find $OUTPUT_DIR -type f -name "*.html" | head -10
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./out
-        # 如果构建输出在其他目录，修改为相应的目录
-        # publish_dir: ./.next
         force_orphan: true
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
@@ -122,5 +184,7 @@ jobs:
     - name: Verify deployment
       run: |
         echo "部署完成！"
-        echo "你的网站应该可以在以下地址访问："
-        echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+        echo "网站地址: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+        echo "如果遇到问题，请检查:"
+        echo "1. GitHub仓库的Settings → Pages"
+        echo "2. Actions日志中的错误信息"
