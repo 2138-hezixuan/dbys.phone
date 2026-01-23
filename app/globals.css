@@ -160,6 +160,8 @@ body {
   }
 }
 
+/* ===== 游戏专用防滑样式 ===== */
+
 /* 5. 游戏容器 */
 .game-container {
   position: fixed !important;
@@ -170,6 +172,7 @@ body {
   overflow: hidden !important;
   touch-action: none !important;
   -webkit-overflow-scrolling: none !important;
+  overscroll-behavior: none !important;
 }
 
 /* 6. 防止图片、画布拖拽 */
@@ -181,19 +184,31 @@ img, canvas, svg {
   user-drag: none !important;
 }
 
-/* 7. 游戏交互元素例外处理 */
-.interactive-element,
+/* 7. 游戏交互元素 - 但需要特殊处理拖拽 */
+/* 注意：这里我们将 touch-action 改为 none，以便在JavaScript中完全控制 */
+[data-game-draggable],
+[data-game-pressable],
+[data-game-tool],
+.game-draggable,
+.game-pressable,
+.game-tool,
+.wood-block,
+.ink-brush,
+.carving-tool,
+.paper-sheet {
+  touch-action: none !important;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+/* 8. 普通按钮和交互元素 */
 button, 
 .btn, 
 .tool, 
 .brush,
-.grab-area {
-  pointer-events: auto !important;
-  touch-action: manipulation !important;
-}
-
-/* 8. 允许特定游戏控件区域交互 */
-.game-control {
+.grab-area,
+.interactive-element {
   pointer-events: auto !important;
   touch-action: manipulation !important;
 }
@@ -230,10 +245,20 @@ html, body, .game-container {
     -webkit-tap-highlight-color: transparent !important;
   }
   
-  /* 允许特定游戏元素接收触摸事件 */
-  button, .btn, .tool, .brush {
+  /* 游戏交互元素在移动端更大 */
+  .game-draggable,
+  .game-tool,
+  .wood-block,
+  .ink-brush,
+  .carving-tool,
+  .paper-sheet {
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+  
+  /* 防止300ms点击延迟 */
+  .game-interactive {
     touch-action: manipulation !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0.1) !important;
   }
 }
 
@@ -244,22 +269,13 @@ html, body, .game-container {
   }
 }
 
-/* 15. 雕版印刷游戏专用触摸优化 */
-.wood-block,
-.ink-brush,
-.carving-tool,
-.paper-sheet {
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-/* 16. 确保触摸事件可以穿透到游戏交互元素 */
+/* 15. 确保触摸事件可以穿透到游戏交互元素 */
 [data-game-interactive="true"] {
   pointer-events: auto !important;
-  touch-action: manipulation !important;
+  touch-action: none !important;
 }
 
-/* 17. 针对移动端优化字体渲染 */
+/* 16. 针对移动端优化字体渲染 */
 @media (max-width: 768px) {
   body {
     -webkit-font-smoothing: antialiased !important;
@@ -267,7 +283,7 @@ html, body, .game-container {
   }
 }
 
-/* 18. 动画类（替代 tw-animate-css） */
+/* 17. 动画类（替代 tw-animate-css） */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -290,4 +306,58 @@ html, body, .game-container {
 
 .animate-slideInUp {
   animation: slideInUp 0.3s ease-out;
+}
+
+/* 18. 游戏控制区域 */
+.game-controls,
+.controls-area,
+.toolbar {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+}
+
+/* 19. 确保游戏元素层级 */
+.game-draggable,
+.wood-block,
+.ink-brush,
+.carving-tool,
+.paper-sheet {
+  z-index: 1000;
+  position: relative;
+}
+
+/* 20. 印刷按压区域特殊处理 */
+.press-area,
+.pressure-zone {
+  touch-action: none !important;
+  pointer-events: auto !important;
+}
+
+/* 21. 拖拽时的视觉效果 */
+.dragging,
+[data-dragging="true"] {
+  cursor: grab !important;
+  cursor: -webkit-grab !important;
+}
+
+/* 22. 防止文本选择 */
+* {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* 23. 按钮等交互元素允许文本选择 */
+button, input, textarea, [contenteditable] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+/* 24. 游戏画布允许事件 */
+canvas.game-canvas,
+canvas[data-game-canvas] {
+  pointer-events: auto !important;
+  touch-action: none !important;
 }

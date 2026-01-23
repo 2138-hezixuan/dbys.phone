@@ -48,15 +48,9 @@ export default function RootLayout({
     <html 
       lang="zh-CN" 
       className={`${notoSerifSC.variable} ${maShanZheng.variable}`}
-      style={{
-        overflow: 'hidden',
-        position: 'fixed',
-        width: '100%',
-        height: '100%',
-      }}
     >
       <head>
-        {/* 移动端视口控制 - 必须的防滑设置 */}
+        {/* 移动端视口控制 */}
         <meta 
           name="viewport" 
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" 
@@ -66,13 +60,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#000000" />
         
-        {/* 禁止电话号码、日期等自动识别 */}
+        {/* 禁止自动识别 */}
         <meta name="format-detection" content="telephone=no" />
         <meta name="format-detection" content="date=no" />
         <meta name="format-detection" content="address=no" />
         <meta name="format-detection" content="email=no" />
         
-        {/* 禁止搜索引擎转码（针对百度等国内浏览器） */}
+        {/* 禁止搜索引擎转码 */}
         <meta httpEquiv="Cache-Control" content="no-transform" />
         <meta httpEquiv="Cache-Control" content="no-siteapp" />
         
@@ -80,161 +74,140 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
         
-        {/* 预加载关键字体 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
-        {/* 防滑脚本 */}
+        {/* 游戏专用防滑脚本 */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // 防止触摸滚动
-              document.addEventListener('touchmove', function(e) {
-                // 允许按钮等交互元素滚动
-                if (e.target.tagName === 'BUTTON' || 
-                    e.target.tagName === 'INPUT' || 
-                    e.target.tagName === 'TEXTAREA' ||
-                    e.target.classList.contains('interactive') ||
-                    e.target.classList.contains('scrollable')) {
-                  return;
+              // 游戏专用防滑解决方案
+              (function() {
+                // 记录触摸开始位置
+                let touchStartY = 0;
+                let touchStartX = 0;
+                
+                // 判断是否为游戏交互元素
+                function isGameInteractiveElement(element) {
+                  if (!element) return false;
+                  
+                  // 检查元素本身
+                  if (element.hasAttribute('data-game-draggable') || 
+                      element.hasAttribute('data-game-pressable') ||
+                      element.hasAttribute('data-game-tool') ||
+                      element.classList.contains('game-draggable') ||
+                      element.classList.contains('game-pressable') ||
+                      element.classList.contains('game-tool') ||
+                      element.classList.contains('wood-block') ||
+                      element.classList.contains('ink-brush') ||
+                      element.classList.contains('carving-tool') ||
+                      element.classList.contains('paper-sheet') ||
+                      element.classList.contains('draggable') ||
+                      element.classList.contains('pressable')) {
+                    return true;
+                  }
+                  
+                  // 检查父元素
+                  let parent = element.parentElement;
+                  while (parent) {
+                    if (parent.hasAttribute('data-game-interactive') ||
+                        parent.classList.contains('game-interactive')) {
+                      return true;
+                    }
+                    parent = parent.parentElement;
+                  }
+                  
+                  return false;
                 }
-                e.preventDefault();
-              }, { passive: false });
-              
-              // 防止弹性滚动
-              document.addEventListener('touchstart', function() {
-                if (document.body.scrollTop !== 0) {
-                  document.body.scrollTop = 0;
-                }
-                if (document.documentElement.scrollTop !== 0) {
-                  document.documentElement.scrollTop = 0;
-                }
-              });
-              
-              // 禁用双击缩放
-              let lastTouchEnd = 0;
-              document.addEventListener('touchend', function(event) {
-                const now = (new Date()).getTime();
-                if (now - lastTouchEnd <= 300) {
-                  event.preventDefault();
-                }
-                lastTouchEnd = now;
-              }, false);
-              
-              // 页面加载时滚动到顶部
-              window.addEventListener('load', function() {
-                setTimeout(function() {
-                  window.scrollTo(0, 0);
-                  document.body.scrollTop = 0;
-                  document.documentElement.scrollTop = 0;
-                }, 0);
-              });
-              
-              // 防止所有键盘滚动
-              document.addEventListener('keydown', function(e) {
-                const keys = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'];
-                if (keys.includes(e.code)) {
+                
+                // 触摸开始 - 记录位置
+                document.addEventListener('touchstart', function(e) {
+                  touchStartY = e.touches[0].clientY;
+                  touchStartX = e.touches[0].clientX;
+                  
+                  // 如果是游戏交互元素，不阻止默认行为
+                  if (isGameInteractiveElement(e.target)) {
+                    return;
+                  }
+                }, { passive: true });
+                
+                // 触摸移动 - 阻止非游戏元素的滚动
+                document.addEventListener('touchmove', function(e) {
+                  // 如果是游戏交互元素，允许移动
+                  if (isGameInteractiveElement(e.target)) {
+                    // 计算移动距离
+                    const touchY = e.touches[0].clientY;
+                    const touchX = e.touches[0].clientX;
+                    const deltaY = Math.abs(touchY - touchStartY);
+                    const deltaX = Math.abs(touchX - touchStartX);
+                    
+                    // 如果移动距离较小，可能是点击，不阻止
+                    if (deltaY < 10 && deltaX < 10) {
+                      return;
+                    }
+                    
+                    // 游戏元素移动，不阻止默认行为
+                    return;
+                  }
+                  
+                  // 非游戏元素，阻止滚动
                   e.preventDefault();
-                }
-              });
+                }, { passive: false });
+                
+                // 触摸结束
+                document.addEventListener('touchend', function(e) {
+                  // 重置触摸位置
+                  touchStartY = 0;
+                  touchStartX = 0;
+                }, { passive: true });
+                
+                // 防止双击缩放
+                let lastTouchEnd = 0;
+                document.addEventListener('touchend', function(e) {
+                  const now = Date.now();
+                  if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                  }
+                  lastTouchEnd = now;
+                }, false);
+                
+                // 防止键盘滚动
+                document.addEventListener('keydown', function(e) {
+                  const scrollKeys = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'];
+                  if (scrollKeys.includes(e.code)) {
+                    e.preventDefault();
+                  }
+                });
+                
+                // 防止鼠标滚轮滚动
+                document.addEventListener('wheel', function(e) {
+                  e.preventDefault();
+                }, { passive: false });
+                
+                // 页面加载时确保在顶部
+                window.addEventListener('load', function() {
+                  setTimeout(function() {
+                    window.scrollTo(0, 0);
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
+                  }, 100);
+                });
+                
+                // 防止弹性滚动
+                document.addEventListener('scroll', function(e) {
+                  window.scrollTo(0, 0);
+                });
+                
+                console.log('游戏防滑脚本已加载');
+              })();
             `,
           }}
         />
       </head>
-      <body 
-        className="font-serif antialiased bg-background text-foreground"
-        style={{
-          overflow: 'hidden',
-          position: 'fixed',
-          width: '100%',
-          height: '100%',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          margin: 0,
-          padding: 0,
-          touchAction: 'none',
-          overscrollBehavior: 'none',
-        }}
-      >
-        {/* 游戏主容器 - 这个div将应用game-container样式 */}
-        <div 
-          className="game-container"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            overflow: 'hidden',
-            touchAction: 'none',
-            overscrollBehavior: 'none',
-          }}
-        >
+      <body className="font-serif antialiased bg-background text-foreground">
+        {/* 游戏主容器 */}
+        <div className="game-container">
           {children}
         </div>
         
         <Analytics />
-        
-        {/* 额外的防滑样式注入 */}
-        <style jsx global>{`
-          /* 强制隐藏滚动条 */
-          ::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
-          
-          /* 防止文本选择 */
-          * {
-            -webkit-touch-callout: none !important;
-            -webkit-user-select: none !important;
-            -moz-user-select: none !important;
-            -ms-user-select: none !important;
-            user-select: none !important;
-          }
-          
-          /* 允许特定元素文本选择 */
-          .selectable,
-          [contenteditable="true"],
-          input,
-          textarea {
-            -webkit-user-select: text !important;
-            -moz-user-select: text !important;
-            -ms-user-select: text !important;
-            user-select: text !important;
-          }
-          
-          /* 防止图片拖拽 */
-          img {
-            -webkit-user-drag: none !important;
-            -khtml-user-drag: none !important;
-            -moz-user-drag: none !important;
-            -o-user-drag: none !important;
-            user-drag: none !important;
-          }
-          
-          /* 针对iOS的额外处理 */
-          @supports (-webkit-touch-callout: none) {
-            html, body {
-              height: -webkit-fill-available !important;
-              min-height: -webkit-fill-available !important;
-            }
-          }
-          
-          /* 触摸设备优化 */
-          @media (hover: none) and (pointer: coarse) {
-            button, 
-            .btn, 
-            .tool, 
-            .brush,
-            .interactive {
-              touch-action: manipulation !important;
-              -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1) !important;
-            }
-          }
-        `}</style>
       </body>
     </html>
   )
