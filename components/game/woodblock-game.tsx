@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { GameStage, GameState } from "@/lib/game-types";
 import { IntroScreen } from "./intro-screen";
@@ -24,34 +24,38 @@ const initialState: GameState = {
 
 export function WoodblockGame() {
   const [gameState, setGameState] = useState<GameState>(initialState);
+  const [isDragging, setIsDragging] = useState(false);
+  const [touchStartPosition, setTouchStartPosition] = useState({ x: 0, y: 0 });
+  const [elementStartPosition, setElementStartPosition] = useState({ x: 0, y: 0 });
+  const currentElementRef = useRef<HTMLElement | null>(null);
+  const hasSetupRef = useRef(false);
 
-  // 防滑初始化
+  // 游戏专用的防滑和拖拽逻辑
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || hasSetupRef.current) return;
     
-    console.log('雕版印刷游戏 - 防滑初始化');
+    console.log('🎮 雕版印刷游戏 - 防滑系统初始化');
+    hasSetupRef.current = true;
     
     // 标记游戏交互元素的辅助函数
     const markGameElements = () => {
-      // 延迟执行，确保DOM已加载
-      setTimeout(() => {
-        // 查找并标记所有游戏交互元素
-        const interactiveSelectors = [
-          '.wood-block', '.ink-brush', '.carving-tool', '.paper-sheet',
-          '.draggable', '.drag-handle', '.brush-tool', '.brush-handle',
-          '.press-area', '.pressure-zone', '.stamp-area', '.printing-press',
-          '[data-draggable]', '[data-drag]', '[data-tool]', '[data-pressable]',
-          '.game-draggable', '.game-tool', '.game-pressable'
-        ];
-        
-        interactiveSelectors.forEach(selector => {
+      // 查找并标记所有游戏交互元素
+      const interactiveSelectors = [
+        '.wood-block', '.ink-brush', '.carving-tool', '.paper-sheet',
+        '.draggable', '.drag-handle', '.brush-tool', '.brush-handle',
+        '.press-area', '.pressure-zone', '.stamp-area', '.printing-press',
+        '[data-draggable]', '[data-drag]', '[data-tool]', '[data-pressable]',
+        '.game-draggable', '.game-tool', '.game-pressable'
+      ];
+      
+      interactiveSelectors.forEach(selector => {
+        try {
           const elements = document.querySelectorAll(selector);
           elements.forEach(el => {
             if (el instanceof HTMLElement) {
-              // 添加游戏交互标记
+              // 只添加标记，不添加事件监听器
               el.setAttribute('data-game-interactive', 'true');
               
-              // 根据选择器添加特定标记
               if (selector.includes('wood') || 
                   selector.includes('drag') || 
                   selector === '.game-draggable' ||
@@ -79,109 +83,31 @@ export function WoodblockGame() {
               
               // 设置触摸行为
               el.style.touchAction = 'none';
-              
-              // 添加事件监听器
-              if (el.hasAttribute('data-game-draggable')) {
-                el.addEventListener('touchstart', handleTouchStart, { passive: false });
-                el.addEventListener('touchmove', handleTouchMove, { passive: false });
-                el.addEventListener('touchend', handleTouchEnd);
-              }
-              
-              if (el.hasAttribute('data-game-pressable')) {
-                el.addEventListener('touchstart', handleTouchStart, { passive: false });
-                el.addEventListener('touchend', handleTouchEnd);
-              }
             }
           });
-        });
-        
-        console.log(`标记了游戏交互元素`);
-      }, 300);
+        } catch (error) {
+          console.warn('标记游戏元素时出错:', error);
+        }
+      });
     };
     
-    // 触摸事件处理
-    let isDragging = false;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let elementStartX = 0;
-    let elementStartY = 0;
-    let currentElement: HTMLElement | null = null;
-    
-    const handleTouchStart = (e: TouchEvent) => {
-      e.stopPropagation();
-      isDragging = true;
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-      
-      currentElement = e.target as HTMLElement;
-      
-      // 获取元素当前位置
-      if (currentElement) {
-        const rect = currentElement.getBoundingClientRect();
-        elementStartX = rect.left;
-        elementStartY = rect.top;
-      }
-      
-      // 防止默认行为（页面滚动）
-      e.preventDefault();
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!isDragging || !currentElement) return;
-      
-      e.stopPropagation();
-      const touch = e.touches[0];
-      const currentX = touch.clientX;
-      const currentY = touch.clientY;
-      
-      const deltaX = currentX - touchStartX;
-      const deltaY = currentY - touchStartY;
-      
-      const newX = elementStartX + deltaX;
-      const newY = elementStartY + deltaY;
-      
-      // 移动元素
-      currentElement.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-      
-      // 防止页面滚动
-      e.preventDefault();
-    };
-    
-    const handleTouchEnd = (e: TouchEvent) => {
-      isDragging = false;
-      currentElement = null;
-      e.stopPropagation();
-    };
-    
-    // 防止页面滚动
-    const preventPageScroll = (e: TouchEvent) => {
-      // 检查是否是游戏交互元素
-      const target = e.target as HTMLElement;
-      const isGameElement = 
-        target.hasAttribute('data-game-interactive') ||
-        target.closest('[data-game-interactive]') ||
-        target.classList.contains('game-draggable') ||
-        target.classList.contains('game-tool') ||
-        target.classList.contains('game-pressable');
-      
-      // 如果不是游戏元素，阻止滚动
-      if (!isGameElement) {
-        e.preventDefault();
-      }
-    };
-    
-    // 添加事件监听器
-    document.addEventListener('touchmove', preventPageScroll, { 
-      passive: false,
-      capture: true 
-    });
-    
-    // 标记游戏元素
+    // 初始化时标记一次
     markGameElements();
     
-    // 监听阶段变化，重新标记元素
-    const observer = new MutationObserver(markGameElements);
+    // 延迟再次标记，确保DOM完全加载
+    setTimeout(markGameElements, 500);
+    
+    // 使用 MutationObserver 监听DOM变化
+    const observer = new MutationObserver((mutations) => {
+      // 只处理新增节点的变化
+      const hasAddedNodes = mutations.some(mutation => 
+        mutation.addedNodes && mutation.addedNodes.length > 0
+      );
+      if (hasAddedNodes) {
+        setTimeout(markGameElements, 100);
+      }
+    });
+    
     observer.observe(document.body, { 
       childList: true, 
       subtree: true,
@@ -189,12 +115,60 @@ export function WoodblockGame() {
       characterData: false
     });
     
+    // 清理函数
     return () => {
-      // 清理事件监听器
-      document.removeEventListener('touchmove', preventPageScroll);
       observer.disconnect();
+      console.log('🔄 游戏防滑系统清理');
     };
-  }, [gameState.currentStage]); // 依赖当前阶段，阶段变化时重新初始化
+  }, [gameState.currentStage]); // 依赖当前阶段，阶段变化时重新标记
+
+  // 拖拽逻辑
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const target = e.currentTarget as HTMLElement;
+    
+    setIsDragging(true);
+    currentElementRef.current = target;
+    setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+    
+    // 获取元素当前位置
+    const rect = target.getBoundingClientRect();
+    setElementStartPosition({ x: rect.left, y: rect.top });
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging || !currentElementRef.current) return;
+    
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const currentX = touch.clientX;
+    const currentY = touch.clientY;
+    
+    const deltaX = currentX - touchStartPosition.x;
+    const deltaY = currentY - touchStartPosition.y;
+    
+    // 移动元素
+    currentElementRef.current.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+  }, [isDragging, touchStartPosition.x, touchStartPosition.y]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    setIsDragging(false);
+    currentElementRef.current = null;
+  }, []);
+
+  const handleGameContainerTouch = useCallback((e: React.TouchEvent) => {
+    // 游戏容器自身的触摸事件处理
+    // 阻止默认行为，但不阻止冒泡，让子元素处理
+    e.preventDefault();
+  }, []);
 
   const goToStage = useCallback((stage: GameStage) => {
     setGameState(prev => ({
@@ -248,6 +222,7 @@ export function WoodblockGame() {
 
   const handleRestart = useCallback(() => {
     setGameState(initialState);
+    hasSetupRef.current = false; // 重置标记，允许重新初始化
   }, []);
 
   const renderStage = () => {
@@ -309,7 +284,7 @@ export function WoodblockGame() {
 
   return (
     <div 
-      className="min-h-screen bg-background relative"
+      className="woodblock-game min-h-screen bg-background relative"
       style={{
         position: 'fixed',
         top: 0,
@@ -319,8 +294,24 @@ export function WoodblockGame() {
         overflow: 'hidden',
         touchAction: 'none',
         overscrollBehavior: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
       }}
+      onTouchStart={handleGameContainerTouch}
+      onTouchMove={handleGameContainerTouch}
+      onTouchEnd={handleGameContainerTouch}
+      onTouchCancel={handleGameContainerTouch}
     >
+      {/* 游戏内部防滑状态指示器（开发用） */}
+      {process.env.NODE_ENV === 'development' && (
+        <div 
+          className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded text-xs z-50"
+          style={{ pointerEvents: 'none' }}
+        >
+          游戏防滑: {hasSetupRef.current ? '✓' : '✗'} | 拖拽: {isDragging ? '进行中' : '未开始'}
+        </div>
+      )}
+      
       {showProgress && (
         <StageProgress 
           currentStage={gameState.currentStage}
@@ -331,6 +322,43 @@ export function WoodblockGame() {
       <AnimatePresence mode="wait">
         {renderStage()}
       </AnimatePresence>
+      
+      {/* 游戏专用的内联样式 */}
+      <style jsx>{`
+        .woodblock-game {
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+        }
+        
+        .woodblock-game * {
+          touch-action: none !important;
+          -webkit-user-select: none !important;
+          user-select: none !important;
+        }
+        
+        /* 确保拖拽元素有适当的层级 */
+        [data-game-draggable] {
+          cursor: grab;
+          z-index: 10;
+          position: relative;
+        }
+        
+        [data-game-draggable]:active {
+          cursor: grabbing;
+          z-index: 100;
+        }
+        
+        /* 游戏工具样式 */
+        [data-game-tool] {
+          cursor: pointer;
+        }
+        
+        /* 防止画布被拖动 */
+        canvas {
+          -webkit-user-drag: none;
+          user-drag: none;
+        }
+      `}</style>
     </div>
   );
 }
