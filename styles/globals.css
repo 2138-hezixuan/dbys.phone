@@ -1,169 +1,363 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+/* ===== 强制防滑动样式 ===== */
+/* 这些样式必须在文件最前面 */
 
-@custom-variant dark (&:is(.dark *));
-
+/* 1. 根元素强制锁定 */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  overscroll-behavior: none;
 }
 
-/* ===== 移动端防滑动样式 ===== */
-html, body {
-  overscroll-behavior: none; /* 防止边界回弹 */
-  touch-action: none; /* 禁止所有触摸操作 */
-  -webkit-touch-callout: none; /* 禁止长按菜单 */
-  -webkit-user-select: none; /* 禁止文本选择（iOS Safari） */
-  user-select: none; /* 禁止文本选择 */
-  overflow: hidden; /* 隐藏滚动条 */
-  position: fixed; /* 固定位置防止滚动 */
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
+html {
+  position: fixed !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  height: 100% !important;
+  -webkit-overflow-scrolling: none !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
 }
 
-/* 游戏容器专用样式 */
-.game-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  touch-action: none;
+body {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  height: 100% !important;
+  -webkit-overflow-scrolling: none !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* 防止图片和画布被拖拽 */
-img, canvas {
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
-  user-drag: none;
-  pointer-events: none; /* 防止触摸事件穿透 */
-}
+/* 2. Tailwind CSS v3 导入（必须放在前面） */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* 允许特定元素内部滚动（如果有需要） */
-.allow-scroll {
-  touch-action: pan-y;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+/* 3. 古风水墨主题 - 宣纸米色背景 */
+:root {
+  --background: oklch(0.96 0.01 85);
+  --foreground: oklch(0.25 0.02 45);
+  
+  /* 卡片 - 宣纸质感 */
+  --card: oklch(0.94 0.015 80);
+  --card-foreground: oklch(0.25 0.02 45);
+  
+  --popover: oklch(0.94 0.015 80);
+  --popover-foreground: oklch(0.25 0.02 45);
+  
+  /* 主色 - 朱砂红 */
+  --primary: oklch(0.55 0.18 25);
+  --primary-foreground: oklch(0.98 0.01 85);
+  
+  /* 次要色 - 墨色 */
+  --secondary: oklch(0.90 0.02 80);
+  --secondary-foreground: oklch(0.25 0.02 45);
+  
+  --muted: oklch(0.88 0.02 75);
+  --muted-foreground: oklch(0.45 0.02 45);
+  
+  /* 强调色 - 青铜色 */
+  --accent: oklch(0.60 0.10 75);
+  --accent-foreground: oklch(0.98 0.01 85);
+  
+  --destructive: oklch(0.55 0.20 25);
+  --destructive-foreground: oklch(0.98 0.01 85);
+  
+  --border: oklch(0.80 0.03 70);
+  --input: oklch(0.85 0.02 75);
+  --ring: oklch(0.55 0.18 25);
+  
+  /* 木板色 */
+  --wood: oklch(0.55 0.08 60);
+  --wood-light: oklch(0.70 0.06 65);
+  --ink: oklch(0.20 0.02 45);
+  --paper: oklch(0.96 0.02 85);
+  
+  --chart-1: oklch(0.55 0.18 25);
+  --chart-2: oklch(0.60 0.10 75);
+  --chart-3: oklch(0.45 0.05 45);
+  --chart-4: oklch(0.70 0.06 65);
+  --chart-5: oklch(0.55 0.08 60);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.94 0.015 80);
+  --sidebar-foreground: oklch(0.25 0.02 45);
+  --sidebar-primary: oklch(0.55 0.18 25);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.88 0.02 75);
+  --sidebar-accent-foreground: oklch(0.25 0.02 45);
+  --sidebar-border: oklch(0.80 0.03 70);
+  --sidebar-ring: oklch(0.55 0.18 25);
 }
-
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  /* 暗色古风主题 - 深墨色背景 */
+  --background: oklch(0.18 0.02 45);
+  --foreground: oklch(0.92 0.02 85);
+  
+  --card: oklch(0.22 0.02 45);
+  --card-foreground: oklch(0.92 0.02 85);
+  
+  --popover: oklch(0.22 0.02 45);
+  --popover-foreground: oklch(0.92 0.02 85);
+  
+  /* 主色 - 朱砂红 */
+  --primary: oklch(0.60 0.18 25);
+  --primary-foreground: oklch(0.98 0.01 85);
+  
+  --secondary: oklch(0.28 0.02 45);
+  --secondary-foreground: oklch(0.92 0.02 85);
+  
+  --muted: oklch(0.28 0.02 45);
+  --muted-foreground: oklch(0.65 0.02 75);
+  
+  /* 强调色 - 金色 */
+  --accent: oklch(0.70 0.12 85);
+  --accent-foreground: oklch(0.18 0.02 45);
+  
+  --destructive: oklch(0.50 0.18 25);
+  --destructive-foreground: oklch(0.98 0.01 85);
+  
+  --border: oklch(0.32 0.02 50);
+  --input: oklch(0.28 0.02 45);
+  --ring: oklch(0.60 0.18 25);
+  
+  --wood: oklch(0.45 0.06 55);
+  --wood-light: oklch(0.55 0.05 60);
+  --ink: oklch(0.15 0.02 45);
+  --paper: oklch(0.88 0.02 80);
+  
+  --chart-1: oklch(0.60 0.18 25);
+  --chart-2: oklch(0.70 0.12 85);
+  --chart-3: oklch(0.55 0.05 60);
+  --chart-4: oklch(0.65 0.08 75);
+  --chart-5: oklch(0.45 0.06 55);
+  
+  --sidebar: oklch(0.20 0.02 45);
+  --sidebar-foreground: oklch(0.92 0.02 85);
+  --sidebar-primary: oklch(0.60 0.18 25);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.28 0.02 45);
+  --sidebar-accent-foreground: oklch(0.92 0.02 85);
+  --sidebar-border: oklch(0.32 0.02 50);
+  --sidebar-ring: oklch(0.60 0.18 25);
 }
 
-@theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
+/* 4. 基础样式 */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
+    outline-color: var(--ring) / 0.5;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
+}
+
+/* ===== 游戏专用防滑样式 ===== */
+
+/* 5. 游戏容器 */
+.game-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  touch-action: none !important;
+  -webkit-overflow-scrolling: none !important;
+  overscroll-behavior: none !important;
+}
+
+/* 6. 防止图片、画布拖拽 */
+img, canvas, svg {
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+}
+
+/* 7. 游戏交互元素 - 但需要特殊处理拖拽 */
+/* 注意：这里我们将 touch-action 改为 none，以便在JavaScript中完全控制 */
+[data-game-draggable],
+[data-game-pressable],
+[data-game-tool],
+.game-draggable,
+.game-pressable,
+.game-tool,
+.wood-block,
+.ink-brush,
+.carving-tool,
+.paper-sheet {
+  touch-action: none !important;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+/* 8. 普通按钮和交互元素 */
+button, 
+.btn, 
+.tool, 
+.brush,
+.grab-area,
+.interactive-element {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+/* 9. 确保没有溢出滚动 */
+* {
+  -webkit-overflow-scrolling: none !important;
+}
+
+/* 10. 针对iOS Safari的特殊处理 */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    height: -webkit-fill-available !important;
+    min-height: -webkit-fill-available !important;
+  }
+}
+
+/* 11. 防止所有滚动条 */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 12. 确保全屏模式 */
+html, body, .game-container {
+  overscroll-behavior-x: none !important;
+  overscroll-behavior-y: none !important;
+}
+
+/* 13. 针对触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  html, body {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  
+  /* 游戏交互元素在移动端更大 */
+  .game-draggable,
+  .game-tool,
+  .wood-block,
+  .ink-brush,
+  .carving-tool,
+  .paper-sheet {
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+  
+  /* 防止300ms点击延迟 */
+  .game-interactive {
+    touch-action: manipulation !important;
+  }
+}
+
+/* 14. 如果是PWA全屏模式 */
+@media (display-mode: standalone) {
+  body {
+    background-color: var(--background) !important;
+  }
+}
+
+/* 15. 确保触摸事件可以穿透到游戏交互元素 */
+[data-game-interactive="true"] {
+  pointer-events: auto !important;
+  touch-action: none !important;
+}
+
+/* 16. 针对移动端优化字体渲染 */
+@media (max-width: 768px) {
+  body {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+}
+
+/* 17. 动画类（替代 tw-animate-css） */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* 18. 游戏控制区域 */
+.game-controls,
+.controls-area,
+.toolbar {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+}
+
+/* 19. 确保游戏元素层级 */
+.game-draggable,
+.wood-block,
+.ink-brush,
+.carving-tool,
+.paper-sheet {
+  z-index: 1000;
+  position: relative;
+}
+
+/* 20. 印刷按压区域特殊处理 */
+.press-area,
+.pressure-zone {
+  touch-action: none !important;
+  pointer-events: auto !important;
+}
+
+/* 21. 拖拽时的视觉效果 */
+.dragging,
+[data-dragging="true"] {
+  cursor: grab !important;
+  cursor: -webkit-grab !important;
+}
+
+/* 22. 防止文本选择 */
+* {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* 23. 按钮等交互元素允许文本选择 */
+button, input, textarea, [contenteditable] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+/* 24. 游戏画布允许事件 */
+canvas.game-canvas,
+canvas[data-game-canvas] {
+  pointer-events: auto !important;
+  touch-action: none !important;
 }
