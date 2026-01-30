@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[36661,["/dbys/_next/static/chunks/456cdd6c21d91c32.js","/dbys/_next/static/chunks/3e3d97a65ae9be7f.js"],"WoodblockGame"]
+3:I[89836,["/dbys/_next/static/chunks/8921800e315bba04.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"0wPBFfCZr1xoiAAKHprO8","rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/dbys/_next/static/chunks/3e3d97a65ae9be7f.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"loading":null,"isPartial":false}
+5:null
