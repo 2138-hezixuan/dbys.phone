@@ -17,7 +17,7 @@ const maShanZheng = Ma_Shan_Zheng({
 });
 
 export const metadata: Metadata = {
-  title: '雕版印刷 - 传承千年的技艺',
+  title: '刻不容缓 - 传承千年的技艺',
   description: '体验中国传统雕版印刷工艺，通过互动游戏学习写样、上板、刻版、刷墨、印刷五大步骤',
   generator: 'v0.app',
   icons: {
