@@ -39,10 +39,10 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: '雕版印刷',
+    title: '刻不容缓',
     statusBarStyle: 'black-translucent',
   },
-  applicationName: '雕版印刷',
+  applicationName: '刻不容缓',
   formatDetection: {
     telephone: false,
     date: false,
