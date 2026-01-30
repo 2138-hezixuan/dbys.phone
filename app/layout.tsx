@@ -141,7 +141,7 @@ export default function RootLayout({
           {children}
         </div>
         
-        <Analytics />
+        {/* <Analytics /> */}
       </body>
     </html>
   )

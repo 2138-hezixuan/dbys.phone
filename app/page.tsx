@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { WoodblockGame } from "@/components/game/woodblock-game";
+import { useEffect } from 'react'; // 添加这行
 
+export default function Home() {
+  useEffect(() => {
+    document.title = '刻不容缓 - 传承千年的技艺'; // 添加这行
+  }, []);
 export default function Home() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
